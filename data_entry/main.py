@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from sqlalchemy import create_engine, Column, Integer, Float, DateTime, MetaData, Table, func
 from datetime import datetime
 import httpx
@@ -102,4 +103,7 @@ async def get_data_points(request: Request, token: Optional[str] = None):
         return RedirectResponse(url="http://auth_service:3000")  # Redirect back to login
 
     user = verify_token(token)
-    return FileResponse('index.html')
+    file_path = os.path.join(os.getcwd(), "static", "index.html")
+    return FileResponse(file_path)
+
+# return {"message": "Authenticated successfully", "user": user}

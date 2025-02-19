@@ -8,3 +8,4 @@ python-jose[cryptography]==3.3.0
 pydantic==1.8.2
 cryptography==37.0.4
 requests
+aiofiles

@@ -150,7 +150,7 @@ app.get('/', (req, res) => {
                       
                       if (response.ok && data.token) {
                           // Redirect to localhost:8000 with token
-                          window.location.href = \`http://localhost:8000?token=\${data.token}\`;
+                          window.location.href = \`http://localhost:8000/data?token=\${data.token}\`;
                       } else {
                           responseDiv.innerText = JSON.stringify(data, null, 2);
                       }
