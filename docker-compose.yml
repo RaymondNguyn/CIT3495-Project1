@@ -10,16 +10,22 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - app-networks
 
   mongodb:
     image: mongo:latest
+    command: mongod --auth
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGO_INITDB_DATABASE: datadb
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    networks:
+      - app-networks
 
   auth_service:
     build: 
@@ -31,6 +37,8 @@ services:
       - JWT_SECRET=your_jwt_secret
     depends_on:
       - mysql
+    networks:
+      - app-networks
 
   data_entry:
     build:
@@ -47,12 +55,15 @@ services:
     depends_on:
       - mysql
       - auth_service
+    networks:
+      - app-networks
 
   analytics_service:
     build:
       context: ./analytics_service
       dockerfile: Dockerfile
     environment:
+      - PYTHONUNBUFFERED=1
       - MYSQL_HOST=mysql
       - MYSQL_USER=user
       - MYSQL_PASSWORD=password
@@ -61,6 +72,8 @@ services:
     depends_on:
       - mysql
       - mongodb
+    networks:
+      - app-networks
 
   results_service:
     build:
@@ -74,6 +87,12 @@ services:
     depends_on:
       - mongodb
       - auth_service
+    networks:
+      - app-networks
+
+networks:
+  app-networks:
+    driver: bridge
 
 volumes:
   mysql_data:

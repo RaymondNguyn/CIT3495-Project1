@@ -1,4 +1,3 @@
-// results_service/index.js
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const axios = require('axios');
@@ -7,7 +6,7 @@ const app = express();
 app.use(express.json());
 
 const mongoUri = process.env.MONGO_URI || 'mongodb://root:rootpassword@mongodb:27017/';
-const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://auth_service:3000';
+const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:3000';
 
 let mongoClient;
 
@@ -25,60 +24,47 @@ async function connectToMongo() {
 connectToMongo();
 
 // Middleware to verify JWT
-async function verifyToken(req, res, next) {
-  const token = req.headers.authorization;
 
-  if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-
+// Render homepage and display MongoDB data
+app.get('/', async (req, res) => {
   try {
-    const response = await axios.post(
-      `${authServiceUrl}/verify`,
-      {},
-      { headers: { Authorization: token } }
-    );
-    
-    req.user = response.data.user;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
-  }
-}
-
-// Get latest analytics
-app.get('/analytics/latest', verifyToken, async (req, res) => {
-  try {
-    const db = mongoClient.db('analytics');
-    const stats = await db.collection('statistics')
+    const db = mongoClient.db('datadb');
+    const stats = await db.collection('float_statistics')
       .find()
       .sort({ timestamp: -1 })
       .limit(1)
       .toArray();
 
     if (stats.length === 0) {
-      return res.status(404).json({ error: 'No analytics data available' });
+      return res.status(404).send('No analytics data available');
     }
 
-    res.json(stats[0]);
+    // Render the HTML with MongoDB data
+    res.send(`
+      <html>
+        <head>
+          <title>Analytics Results</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .data-container { margin-bottom: 20px; }
+            .data-item { margin: 10px 0; }
+          </style>
+        </head>
+        <body>
+          <h1>Latest Analytics</h1>
+          <div class="data-container">
+            <div class="data-item"><strong>Min:</strong> ${stats[0].min || 'N/A'}</div>
+            <div class="data-item"><strong>Max:</strong> ${stats[0].max || 'N/A'}</div>
+            <div class="data-item"><strong>Average:</strong> ${stats[0].average || 'N/A'}</div>
+            <div class="data-item"><strong>Median:</strong> ${stats[0].median || 'N/A'}</div>
+            <div class="data-item"><strong>Count:</strong> ${stats[0].count || 'N/A'}</div>
+            <div class="data-item"><strong>Timestamp:</strong> ${new Date(stats[0].timestamp * 1000).toLocaleString()}</div>
+          </div>
+        </body>
+      </html>
+    `);
   } catch (error) {
-    res.status(500).json({ error: 'Error fetching analytics' });
-  }
-});
-
-// Get historical analytics
-app.get('/analytics/history', verifyToken, async (req, res) => {
-  try {
-    const db = mongoClient.db('analytics');
-    const stats = await db.collection('statistics')
-      .find()
-      .sort({ timestamp: -1 })
-      .limit(100)
-      .toArray();
-
-    res.json(stats);
-  } catch (error) {
-    res.status(500).json({ error: 'Error fetching analytics history' });
+    res.status(500).send('Error fetching analytics data');
   }
 });
 

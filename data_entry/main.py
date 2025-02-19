@@ -10,6 +10,7 @@ import databases
 import mysql.connector
 from mysql.connector import Error
 import requests
+from pydantic import BaseModel
 
 # Database URL with mysql-connector-python
 DATABASE_URL = (
@@ -40,7 +41,6 @@ data_points = Table(
     Column("id", Integer, primary_key=True),
     Column("min_value", Float),
     Column("max_value", Float),
-    Column("avg_value", Float),
     Column("timestamp", DateTime, default=datetime.utcnow),
     Column("user_id", Integer),
 )
@@ -57,7 +57,7 @@ async def shutdown():
     await database.disconnect()
 
 # Token grabber3000
-AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth_service:3000")
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://localhost:3000")
 
 
 # Auth middleware
@@ -70,22 +70,20 @@ def verify_token(token: str):
 
     return response.json()["user"]
 
-@app.post("/data")
-async def create_data_point(value: float, user: dict = Depends(verify_token)):
-    return {"message": "Authenticated successfully", "user": user}
 
 # Routes
+class DataPoint(BaseModel):
+    min_value: float
+    max_value: float
+
 @app.post("/data")
 async def create_data_point(
-    min_value: float,
-    max_value: float,
-    avg_value: float,
+    data_point: DataPoint,  # Pydantic model used here
     user: dict = Depends(verify_token)
 ):
     query = data_points.insert().values(
-        min_value=min_value,
-        max_value=max_value,
-        avg_value=avg_value,
+        min_value=data_point.min_value,
+        max_value=data_point.max_value,
         user_id=user["userId"]
     )
     try:
@@ -100,7 +98,7 @@ async def get_data_points(request: Request, token: Optional[str] = None):
         token = request.cookies.get("auth_token")
     
     if not token:
-        return RedirectResponse(url="http://auth_service:3000")  # Redirect back to login
+        return RedirectResponse(url="http://localhost:3000")  # Redirect back to login
 
     user = verify_token(token)
     file_path = os.path.join(os.getcwd(), "static", "index.html")
