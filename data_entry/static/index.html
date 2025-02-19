@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Input</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
+        input { margin: 5px; padding: 10px; width: 200px; }
+        button { padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        #response { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Enter Data</h1>
+    <input type="number" id="min_value" placeholder="Min Value">
+    <input type="number" id="max_value" placeholder="Max Value">
+    <input type="number" id="avg_value" placeholder="Avg Value">
+    <button onclick="sendData()">Submit</button>
+
+    <h2>Data Points</h2>
+    <div id="dataList"></div>
+
+    <script>
+        const authToken = localStorage.getItem("authToken"); // Assume stored token
+
+        async function sendData() {
+            const min_value = document.getElementById("min_value").value;
+            const max_value = document.getElementById("max_value").value;
+            const avg_value = document.getElementById("avg_value").value;
+
+            const response = await fetch("/data", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${authToken}` },
+                body: JSON.stringify({ min_value, max_value, avg_value }),
+            });
+
+            const result = await response.json();
+            document.getElementById("response").innerText = JSON.stringify(result, null, 2);
+            fetchData(); // Refresh the list
+        }
+
+        async function fetchData() {
+            const response = await fetch("/data", {
+                headers: { "Authorization": `Bearer ${authToken}` }
+            });
+            const data = await response.json();
+            document.getElementById("dataList").innerText = JSON.stringify(data, null, 2);
+        }
+
+        fetchData(); // Load data on page load
+    </script>
+</body>
+</html>
