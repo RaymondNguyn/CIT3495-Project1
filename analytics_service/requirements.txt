@@ -1,0 +1,8 @@
+# analytics_service/requirements.txt
+sqlalchemy==1.4.23
+mysql-connector-python==8.0.33
+pymongo==4.3.3
+pandas==1.5.3
+numpy==1.24.2
+python-dotenv==0.21.1
+cryptography==37.0.4
